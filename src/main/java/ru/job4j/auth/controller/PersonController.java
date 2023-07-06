@@ -5,15 +5,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.job4j.auth.domain.Person;
-import ru.job4j.auth.repository.PersonRepository;
+import ru.job4j.auth.service.PersonService;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @AllArgsConstructor
 @RequestMapping("/person")
 public class PersonController {
-    private final PersonRepository persons;
+    private final PersonService persons;
 
     @GetMapping("/")
     public List<Person> findAll() {
@@ -29,12 +30,20 @@ public class PersonController {
 
     @PostMapping("/")
     public ResponseEntity<Person> create(@RequestBody Person person) {
-        return new ResponseEntity<>(persons.save(person), HttpStatus.CREATED);
+        Optional<Person> createdPerson = persons.create(person);
+        ResponseEntity<Person> response = new ResponseEntity<>(HttpStatus.CONFLICT);
+        if (createdPerson.isPresent()) {
+            response = new ResponseEntity<>(createdPerson.get(), HttpStatus.CREATED);
+        }
+        return response;
     }
 
     @PutMapping("/")
     public ResponseEntity<Void> update(@RequestBody Person person) {
-        persons.save(person);
+        boolean isUpdated = persons.update(person);
+        if (!isUpdated) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok().build();
     }
 
@@ -42,7 +51,10 @@ public class PersonController {
     public ResponseEntity<Void> delete(@PathVariable int id) {
         Person person = new Person();
         person.setId(id);
-        persons.delete(person);
+        boolean isDeleted = persons.delete(person);
+        if (!isDeleted) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok().build();
     }
 }
