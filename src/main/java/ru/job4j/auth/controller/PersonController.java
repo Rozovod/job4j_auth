@@ -30,14 +30,16 @@ public class PersonController {
                 person.isPresent() ? HttpStatus.OK : HttpStatus.NOT_FOUND);
     }
 
-    @PostMapping("/")
+    @PostMapping("/sign-up")
     public ResponseEntity<Person> create(@RequestBody Person person) {
+        person.setPassword(passwordEncoder.encode(person.getPassword()));
         Optional<Person> createdPerson = persons.create(person);
         ResponseEntity<Person> response = new ResponseEntity<>(HttpStatus.CONFLICT);
         if (createdPerson.isPresent()) {
             response = new ResponseEntity<>(createdPerson.get(), HttpStatus.CREATED);
         }
         return response;
+
     }
 
     @PutMapping("/")
@@ -58,11 +60,5 @@ public class PersonController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/sign-up")
-    public void signUp(@RequestBody Person person) {
-        person.setPassword(passwordEncoder.encode(person.getPassword()));
-        persons.create(person);
     }
 }
