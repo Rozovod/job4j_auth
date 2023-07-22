@@ -8,6 +8,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import ru.job4j.auth.domain.Person;
+import ru.job4j.auth.dto.PersonDTO;
 import ru.job4j.auth.service.PersonService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -72,11 +73,33 @@ public class PersonController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{id}")
+    public ResponseEntity<Void> updatePassword(@PathVariable int id, @RequestBody PersonDTO personDTO) {
+        validatePasswordFromDTO(personDTO);
+        var person = persons.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь с id: " + id + " не найден"));
+        person.setPassword(personDTO.getPassword());
+        if (!persons.update(person)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok().build();
+    }
+
     private void validateParam(@RequestBody Person person) {
         var login = person.getLogin();
         var password = person.getPassword();
         if (login == null || password == null) {
             throw new NullPointerException("Поле Логин или Пароль не должны быть пустыми");
+        }
+        if (!password.matches(".*[A-ZА-Я].*")) {
+            throw new IllegalArgumentException("Пароль должен содержать хотя бы одну заглавную букву");
+        }
+    }
+
+    private void validatePasswordFromDTO(@RequestBody PersonDTO personDTO) {
+        var password = personDTO.getPassword();
+        if (password == null) {
+            throw new NullPointerException("Поле Пароль не должно быть пустым");
         }
         if (!password.matches(".*[A-ZА-Я].*")) {
             throw new IllegalArgumentException("Пароль должен содержать хотя бы одну заглавную букву");
